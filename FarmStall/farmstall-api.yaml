@@ -1,0 +1,262 @@
+openapi: 3.0.3
+
+info:
+  version: v1
+  title: FarmStall API
+  description: |
+    An API for writing reviews about your favourite (or worst) farm stalls
+
+    ![Picture of produce](https://farmstall.designapis.com/img/produce-banner.jpg)
+
+    ---
+
+    # Auth
+ 
+    To create **Reviews** without being _anonymous_.
+    You need to add an **AuthToken** to
+    the Authorization header.
+ 
+    To get an **AuthToken**:
+    1. Create a **User** with [POST /users](#Users/post_users)
+    2. Get a **AuthToken** by calling [POST /tokens](#Users/post_tokens)
+    with your **User** credentials.
+
+    # Reviews
+    Reviews are the heart of this API. <br/>
+    Registered **Users** and anonymous users can both
+    write reviews based on their experience at farm stalls.
+ 
+    Each review comes with a rating of between one and five stars inclusive.
+ 
+    - One star being the worst experience
+    - Five stars being the best
+
+    ### Example Reviews
+ 
+    'A wonderful time!' &mdash; Bob McNally
+    <br/>
+    ![5 stars](https://farmstall.designapis.com/img/rating-5.png)
+ 
+    'An awful place' &mdash; _Anonymous_
+    <br/>
+    ![1 star](https://farmstall.designapis.com/img/rating-1.png)
+ 
+    'A totally average place.' &mdash; Jane Fair
+    <br/>
+    ![3 stars](https://farmstall.designapis.com/img/rating-3.png)
+  contact:
+    name: Mr. Robot
+    email: mr.robot@example.com
+    url: https://farmstall.designapis.com
+  license:
+    name: Apache 2.0
+    url: https://apache.org/licenses/LICENSE-2.0
+
+externalDocs:
+  url: https://farmstall.designapis.com
+  description: Hosted Docs
+
+servers:
+  - url: https://farmstall.designapis.com/v1
+
+tags:
+  - name: Reviews
+    description: Reviews of your favourite/worst farm stalls
+  - name: Users
+    description: Users and authentication
+
+paths:
+  /reviews:
+    get:
+      tags:
+        - 'Reviews'
+      description: Gets a bunch of reviews.
+      parameters:
+        - name: maxRating
+          description: Filters reviews by the maximum rating
+          in: query
+          schema:
+            type: number
+      responses:
+        200:
+          description: A bunch of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    rating:
+                      type: integer
+                      minimum: 1
+                      maximum: 5
+                    message:
+                      type: string
+                    uuid:
+                      type: string
+                      pattern: '^[0-9a-fA-F\-]{36}$'
+                    userId:
+                      type: string
+                      pattern: '^[0-9a-fA-F\-]{36}$'
+                      nullable: true
+    post:
+      tags:
+        - 'Reviews'
+      description: Create a new review
+      security:
+        - {}
+        - AuthToken: []
+      requestBody:
+        description: A new review
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                message: A lovely experience
+                rating: 4
+              properties:
+                message:
+                  type: string
+                  example: Blew my mind, life won't be the same after this.
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                userId:
+                  type: string
+                  pattern: '^[0-9a-fA-F\-]{36}$'
+                  nullable: true
+                  example: 4ed94c03-85e9-4506-90fa-ee6a66ef8757
+      responses:
+        201:
+          description: Successfully created a new review
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  rating:
+                    type: integer
+                    minimum: 1
+                    maximum: 5
+                  userId:
+                    type: string
+                    pattern: '^[0-9a-fA-F\-]{36}$'
+                    nullable: true
+                  uuid:
+                    type: string
+                    pattern: '^[0-9a-fA-F\-]{36}$'
+  /reviews/{reviewId}:
+    get:
+      tags:
+        - 'Reviews'
+      description: Get a single review object
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+            description: The review's ID
+            example: 1834df66-2640-442a-8997-0be9d8caeed2
+      responses:
+        200:
+          description: Review object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  rating:
+                    type: integer
+                    minimum: 1
+                    maximum: 5
+                  userId:
+                    type: string
+                    pattern: '^[0-9a-fA-F\-]{36}$'
+                    nullable: true
+                  uuid:
+                    type: string
+                    pattern: '^[0-9a-fA-F\-]{36}$'
+  /users:
+    post:
+      tags:
+        - 'Users'
+      description: Create a new user
+      requestBody:
+        description: A new user
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: johnwick
+                password:
+                  type: string
+                  example: qwerty123
+                fullname:
+                  type: string
+                  example: John Wick
+      responses:
+        201:
+          description: A new user successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+                    example: johnwick
+                  fullname:
+                    type: string
+                    example: John Wick
+                  uuid:
+                    type: string
+                    pattern: '^[0-9a-fA-F\-]{36}$'
+                    example: b65bac2d-a415-4283-bad5-f3554d4afb0e
+  /tokens:
+    post:
+      tags:
+        - 'Users'
+      description: Get authorization token
+      requestBody:
+        description: User credentials
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: johnwick
+                password:
+                  type: string
+                  example: qwerty123
+      responses:
+        200:
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: 8zFcoEt8D6
+
+components:
+  securitySchemes:
+    AuthToken:
+      type: apiKey
+      in: header
+      name: Authorization

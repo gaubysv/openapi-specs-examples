@@ -1,0 +1,634 @@
+openapi: 3.0.3
+
+info:
+  title: PetSitter API
+  version: '0.1'
+
+servers:
+  - url: http://localhost:9090/api
+
+tags:
+  - name: Users
+    description: User-related operations
+  - name: Jobs
+    description: Job-related operations
+
+paths:
+  /users:
+    post:
+      tags:
+        - Users
+      security: []
+      summary: Register User
+      operationId: registerUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+  /users/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Users
+      summary: View User
+      operationId: viewUserWithId
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      tags:
+        - Users
+      summary: Modify User
+      operationId: modifyUserWithId
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    delete:
+      tags:
+        - Users
+      summary: Delete User
+      operationId: deleteUserWithId
+      responses:
+        '204':
+          description: No Content
+  /users/{id}/jobs:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Users
+      summary: List Jobs For User
+      operationId: listJobsForUser
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+  /users/{id}/job-applications:
+    parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+    get:
+      tags:
+        - Users
+      summary: List Applications for User
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobApplication'
+              examples:
+                two-items:
+                  summary: Two Job Applications
+                  value:
+                    items:
+                    - id: 123
+                      user_id: 123
+                      job_id: 123
+                      status: PENDING
+                    - id: 123
+                      user_id: 123
+                      job_id: 123
+                      status: COMPLETE
+                empty:
+                  summary: Zero Job Applications
+                  value:
+                    items: []
+  /jobs:
+    get:
+      tags:
+        - Jobs
+      summary: List/Search available Jobs
+      operationId: listOrSearchAvailableJobs
+      parameters:
+        - in: query
+          name: start_time_before
+          description: Search jobs starting before this date and time
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: start_time_after
+          description: Search jobs starting after this date and time
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: end_time_before
+          description: Search jobs ending before this date and time
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: end_time_after
+          description: Search jobs ending after this date and time
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: activity
+          description: |
+            Performs a full-text search for the phrase entered in job activities
+          schema:
+            type: string
+        - in: query
+          name: pets
+          style: deepObject
+          description: Searches for pets matching specific criteria
+          schema:
+            type: object
+            properties:
+              age_below:
+                type: integer
+                description: Return only pets with this age or below
+              age_above:
+                type: integer
+                description: Return only pets with this age or above
+              species:
+                type: string
+                description: |
+                  Return only pets with this species.
+                  Provide multiple species as comma-separated values.
+        - in: query
+          name: limit
+          description: The maximum number of results to return
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - in: query
+          name: cursor
+          description: Use the cursor from the response to access more results
+          schema:
+            type: string
+        - in: query
+          name: sort
+          description: |
+            Indicate the sorting key and direction for the results.
+            Use the field name, suffixed with ":asc" for ascending
+            or ":desc" for descending order.
+            Valid fields: start_time, end_time, activity
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Job'
+                  cursor:
+                    type: string
+                    description: Cursor for the next result page
+                    nullable: true
+              examples:
+                with-some-data:
+                  summary: With some data
+                  value:
+                    items:
+                      - id: 123
+                        creator_user_id: 345
+                        start_time: 2020-06-01T00:00:00Z
+                        end_time: 2020-06-02T00:00:00Z
+                        dog:
+                          name: Fido
+                          age: 3
+                          breed: Doberman
+                          size: medium
+                        activity: walk
+                      - id: 234
+                        creator_user_id: 345
+                        start_time: 2020-06-01T00:00:00Z
+                        end_time: 2020-06-03T00:00:00Z
+                        dog:
+                          name: Rex
+                          age: 2
+                          breed: Rottweiler
+                          size: large
+                        activity: sit
+                      - id: 234
+                        creator_user_id: 345
+                        start_time: 2020-06-01T00:00:00Z
+                        end_time: 2020-06-02T00:00:00Z
+                        dog:
+                          name: Blossom
+                          age: 2
+                          breed: Rottweiler
+                          size: large
+                        activity: walk
+    post:
+      tags:
+        - Jobs
+      summary: Create Job
+      operationId: createJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OASError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OASError'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /jobs/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Jobs
+      summary: View Job
+      operationId: viewJobWithId
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+    put:
+      tags:
+        - Jobs
+      summary: Modify Job
+      operationId: modifyJobWithId
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+    delete:
+      tags:
+        - Jobs
+      summary: Delete Job
+      operationId: deleteJobWithId
+      responses:
+        '204':
+          description: No Content
+  /jobs/{id}/job-applications:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      tags:
+        - Jobs
+      summary: List Applications For Job
+      operationId: viewApplicationsForJob
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobApplication'
+    post:
+      tags:
+        - Jobs
+      summary: Create Job Application
+      operationId: createJobApplication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobApplication'
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location:
+              schema:
+                type: string
+  /job-applications/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    put:
+      tags:
+        - Jobs
+      summary: Modify Job Application
+      operationId: modifyJobApplicationWithId
+      requestBody:
+        description: Update the application details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobApplication'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobApplication'
+  /sessions:
+    post:
+      tags:
+        - Users
+      security: []
+      summary: Start Session (Login)
+      operationId: startSession
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+    
+
+components:
+  securitySchemes:
+    SessionToken:
+      type: apiKey
+      in: header
+      name: Authorization
+  schemas:
+    OASError:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: |
+                  For input validation errors, identifies where
+                  in the JSON request body the error occurred.
+              message:
+                type: string
+                description: Human-readable error message.
+              errorCode:
+                type: string
+                description: Code indicating error type.
+    Problem:
+      type: object
+      properties:
+        type:
+          type: string
+          description: URI indicating error type.
+        title:
+          type: string
+          description: Human-readable error title.
+        status:
+          type: integer
+          description: HTTP status code.
+        detail:
+          type: string
+          description: Human-readable error details.
+        instance:
+          type: string
+          description: URI indicating error instance.
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          writeOnly: true
+          minLength: 8
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+              - PET_OWNER
+              - PET_SITTER
+              - ADMIN
+      required:
+        - email
+        - full_name
+        - roles
+    Job:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        creator_user_id:
+          type: string
+          readOnly: true
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+        activity:
+          type: string
+          minLength: 5
+          maxLength: 500
+        pets:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/Pet'
+      required:
+        - start_time
+        - end_time
+        - activity
+        - pets
+    Pet:
+      allOf:
+        - type: object
+          properties:
+            name:
+              type: string
+              minLength: 2
+              maxLength: 20
+            age:
+              type: integer
+              minimum: 1
+              maximum: 100
+        - oneOf:
+            - $ref: '#/components/schemas/Dog'
+            - $ref: '#/components/schemas/Cat'
+          discriminator:
+            propertyName: species
+            mapping:
+              Dog: '#/components/schemas/Dog'
+              Cat: '#/components/schemas/Cat'
+    Dog:
+      type: object
+      properties:
+        species:
+          type: string
+        breed:
+          type: string
+          enum:
+            - labrador_retriever
+            - golden_retriever
+            - german_shepherd
+            - beagle
+        size:
+          type: string
+          enum:
+            - small
+            - medium
+            - large
+      required:
+        - species
+    Cat:
+      type: object
+      properties:
+        species:
+          type: string
+        breed:
+          type: string
+      required:
+        - species
+    JobApplication:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          default: APPLYING
+          enum:
+            - APPLYING
+            - APPROVED
+            - REJECTED
+            - CANCELED
+        user_id:
+          type: string
+          readOnly: true
+        job_id:
+          type: string
+          readOnly: true
+      required:
+        - id
+        - status
+        - user_id
+        - job_id
+    Session:
+      type: object
+      properties:
+        user_id:
+          type: string
+        auth_header:
+          type: string
+
+security:
+  - SessionToken: []
